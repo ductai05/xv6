@@ -196,6 +196,7 @@ UPROGS=\
 	$U/_zombie\
 	$U/_sleep\
 	$U/_find\
+	$U/_primes\
 
 
 
