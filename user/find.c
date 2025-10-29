@@ -4,8 +4,7 @@
 #include "kernel/fs.h"
 #include "kernel/fcntl.h"
 
-void
-find(char *path, const char *target_name)
+void find(char *path, const char *target_name)
 {
   char buf[512], *p;
   int fd;
@@ -68,8 +67,7 @@ find(char *path, const char *target_name)
 }
 
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   if(argc < 3){
     fprintf(2, "Usage: find <directory> <filename>\n");
