@@ -70,14 +70,40 @@ sys_sleep(void)
 }
 
 
-#ifdef LAB_PGTBL
 int
 sys_pgaccess(void)
 {
-  // lab pgtbl: your code here.
+  uint64 va;          // Địa chỉ ảo bắt đầu
+  int npages;         // Số lượng trang cần kiểm tra
+  uint64 user_mask_addr; // Địa chỉ buffer bitmask phía user
+  uint64 mask = 0;    // Bitmask kết quả
+  struct proc *p = myproc();
+
+  // Lấy tham số từ user space
+  argaddr(0, &va);
+  argint(1, &npages);
+  argaddr(2, &user_mask_addr);
+  
+  // Duyệt qua từng trang
+  for(int i = 0; i < npages; i++) {
+    uint64 current_va = va + i * PGSIZE;
+    
+    // Tìm PTE tương ứng bằng hàm walk()
+    pte_t *pte = walk(p->pagetable, current_va, 0);
+
+    // Kiểm tra PTE hợp lệ và bit PTE_A
+    if(pte != 0 && (*pte & PTE_V) && (*pte & PTE_A)) {
+      mask |= (1L << i);
+      *pte &= ~PTE_A;
+    }
+  }
+
+  // Sao chép bitmask kết quả về user space
+  if(copyout(p->pagetable, user_mask_addr, (char *)&mask, sizeof(mask)) < 0)
+    return -1;
+
   return 0;
 }
-#endif
 
 uint64
 sys_kill(void)
