@@ -1,0 +1,44 @@
+Question 1: Which other xv6 system call(s) could be made faster using this shared page? Explain how.
+
+Answer: System calls that only read kernel data without modifying it could be made faster using a shared read-only page. Examples include:
+
+1. getppid() - Get parent process ID: Similar to getpid(), the parent PID doesn't change during the process lifetime. We could store ppid in the shared usyscall structure.
+
+2. uptime() - Get system uptime: Could map a read-only page containing the system ticks counter, allowing processes to read it directly without a kernel crossing.
+
+3. getuid()/getgid() - Get user/group ID: These values are static per process and could be stored in the shared page.
+
+The optimization works by mapping kernel data into user space as read-only, eliminating the overhead of trap into kernel mode, context switching, and trap return.
+
+
+Question 2: For every leaf page in the vmprint output, explain what it logically contains and what its permission bits are.
+
+Answer: Looking at the vmprint output for the init process:
+
+.. .. ..0: pte 0x0000000021fda01f pa 0x0000000087f68000
+- Contents: Program text/code (instructions) from the init executable
+- Permission bits: PTE_V | PTE_R | PTE_X | PTE_U (0x1F = valid, readable, executable, user-accessible)
+
+.. .. ..1: pte 0x0000000021fd941f pa 0x0000000087f65000
+- Contents: Program data (initialized global variables)
+- Permission bits: PTE_V | PTE_R | PTE_X | PTE_U (0x1F = valid, readable, executable, user-accessible)
+
+.. .. ..2: pte 0x0000000021fd9007 pa 0x0000000087f64000
+- Contents: Guard page for the stack (no access)
+- Permission bits: PTE_V (0x07 = valid only, used as guard page)
+
+.. .. ..3: pte 0x0000000021fd8c17 pa 0x0000000087f63000
+- Contents: User stack
+- Permission bits: PTE_V | PTE_R | PTE_W | PTE_U (0x17 = valid, readable, writable, user-accessible)
+
+.. .. ..509: pte 0x0000000021fdcc13 pa 0x0000000087f73000
+- Contents: USYSCALL shared page containing struct usyscall (with PID)
+- Permission bits: PTE_V | PTE_R | PTE_U (0x13 = valid, readable, user-accessible, read-only)
+
+.. .. ..510: pte 0x0000000021fdd007 pa 0x0000000087f74000
+- Contents: TRAPFRAME page for saving user registers during traps
+- Permission bits: PTE_V | PTE_R | PTE_W (0x07 = valid, readable, writable, not user-accessible)
+
+.. .. ..511: pte 0x0000000020001c0b pa 0x0000000080007000
+- Contents: TRAMPOLINE code for trap handling entry/exit
+- Permission bits: PTE_V | PTE_R | PTE_X (0x0B = valid, readable, executable, not user-accessible from userspace directly)
