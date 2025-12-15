@@ -293,6 +293,41 @@ freewalk(pagetable_t pagetable)
   kfree((void*)pagetable);
 }
 
+// Recursively print page table entries.
+// Helper function for vmprint.
+void
+vmprintwalk(pagetable_t pagetable, int level)
+{
+  // there are 2^9 = 512 PTEs in a page table.
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+    if(pte & PTE_V){
+      // Print indentation based on level
+      for(int j = 0; j < level; j++){
+        printf(" ..");
+      }
+      
+      // Print PTE index, PTE value, and physical address
+      uint64 pa = PTE2PA(pte);
+      printf("%d: pte %p pa %p\n", i, pte, pa);
+      
+      // If this is not a leaf page (doesn't have R/W/X set), recurse
+      if((pte & (PTE_R|PTE_W|PTE_X)) == 0){
+        uint64 child = PTE2PA(pte);
+        vmprintwalk((pagetable_t)child, level + 1);
+      }
+    }
+  }
+}
+
+// Print a page table.
+void
+vmprint(pagetable_t pagetable)
+{
+  printf("page table %p\n", pagetable);
+  vmprintwalk(pagetable, 1);
+}
+
 // Free user memory pages,
 // then free page-table pages.
 void
